@@ -1,0 +1,8 @@
+geopandas
+rasterio
+shapely
+pyproj
+folium
+streamlit
+streamlit-folium
+geobr
