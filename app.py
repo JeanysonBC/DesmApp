@@ -1,11 +1,9 @@
 import streamlit as st
-import geopandas as gpd
-import pandas as pd
 import os
 import gdown
 import rasterio
-import fsspec
-
+import geopandas as gpd
+import pandas as pd
 from geobr import read_municipality, read_prodes
 from streamlit_folium import st_folium
 import folium
@@ -14,30 +12,29 @@ st.set_page_config(layout="wide", page_title="Desmatamento Municipal (PRODES)")
 
 @st.cache_data
 def load_data(year):
-    tif_url   = "https://drive.google.com/file/d/1E2HXB3IRymBJV3Ufxq_boPn-kZwZT3iE/view?usp=drive_link"
-    tif_local = "data/prodes_{}.tif".format(year)
+    # ───── DOWNLOAD DO TIF DO GOOGLE DRIVE ─────
+    tif_url = "https://drive.google.com/uc?id=1E2HXB3IRymBJV3Ufxq_boPn-kZwZT3iE"
+    tif_local = f"data/prodes_{year}.tif"
     os.makedirs("data", exist_ok=True)
     if not os.path.exists(tif_local):
-        # baixa do Drive
         gdown.download(tif_url, tif_local, quiet=False)
-
+    # ───── LEITURA DO TIF (exemplo) ─────
     with rasterio.open(tif_local) as src:
-        # aqui você pode ler o raster inteiro ou um recorte:
         raster = src.read(1)
-        # (se quiser transformar em vetores, use rasterio.features…)
+    # ───── LEITURA DOS SHAPEFILES ─────
     munis = read_municipality(year=2020)[["code_muni", "name_muni", "geometry"]]
     munis = munis.to_crs("EPSG:4326")
     prodes = read_prodes(year=year)[["code_muni", "geometry"]]
     prodes = prodes.to_crs("EPSG:4326")
-    return munis, prodes
+    return munis, prodes, raster
 
-st.sidebar.title("Configurações")
+# ───── INTERFACE STREAMLIT ─────
 year = st.sidebar.select_slider(
     "Ano do PRODES",
     options=list(range(2005, 2024)),
     value=2023
 )
-munis, prodes = load_data(year)
+munis, prodes, raster = load_data(year)
 
 municipios = munis["name_muni"].sort_values().tolist()
 selecionado = st.sidebar.selectbox("Escolha o município", municipios)
